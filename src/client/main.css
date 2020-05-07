@@ -4,6 +4,10 @@ body {
     display: flex;
 }
 
+h1 {
+    text-align: center;
+}
+
 .container {
     margin: auto;
 }
@@ -11,7 +15,7 @@ body {
 .field {
     display: grid;
     grid-auto-rows: 140px;
-    grid-template-columns: repeat(3, 140);
+    grid-template-columns: repeat(3, 140px);
     gap: 10px;
     height: 450px;
     width: 450px;
@@ -20,7 +24,10 @@ body {
 .cell {
     height: 140px;
     width: 140px;
+    line-height: 140px;
     border: 1px solid #b3b2b2;
     background: #e0e0e0;
     padding: 0;
+    font-size: 140px;
+    font-family: inherit;
 }
