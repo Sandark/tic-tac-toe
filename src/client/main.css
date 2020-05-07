@@ -36,3 +36,8 @@ h1 {
     border: none;
     outline: none;
 }
+
+.chat {
+    text-align: center;
+    font-style: italic;
+}
