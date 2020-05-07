@@ -1,0 +1,26 @@
+
+body {
+    font-family: Rubik, sans-serif;
+    display: flex;
+}
+
+.container {
+    margin: auto;
+}
+
+.field {
+    display: grid;
+    grid-auto-rows: 140px;
+    grid-template-columns: repeat(3, 140);
+    gap: 10px;
+    height: 450px;
+    width: 450px;
+}
+
+.cell {
+    height: 140px;
+    width: 140px;
+    border: 1px solid #b3b2b2;
+    background: #e0e0e0;
+    padding: 0;
+}
