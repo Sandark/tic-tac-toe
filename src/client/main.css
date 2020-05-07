@@ -31,3 +31,8 @@ h1 {
     font-size: 140px;
     font-family: inherit;
 }
+
+.cell:focus {
+    border: none;
+    outline: none;
+}

@@ -17,23 +17,23 @@ app.get("/", (req, res) => {
 users = {};
 
 io.on("connection", (socket) => {
-    if (Object.keys(users).length == 0) { 
-        users[socket.io] = "X";
+    if (Object.keys(users).length === 0) {
+        users[socket.id] = "X";
         socket.emit("char", "X");
-    } else if (Object.keys(users).length == 1) {
-        users[socket.io] = "O";
+    } else if (Object.keys(users).length === 1) {
+        users[socket.id] = "O";
         socket.emit("char", "O");
     } else {
-        socket.close();
+        socket.disconnect(true)
         return;
     }
 
-    console.log(`A user connected ${socket.id} with ${users[socket.io]}`);
+    console.log(`A user connected ${socket.id} with ${users[socket.id]}`);
 
 
     socket.on('disconnect', () => {
         console.log(`user disconnected ${socket.id}`);
-        delete users[socket.io];
+        delete users[socket.id];
       });
 
     socket.on("cell selected", (btn, char) => {
