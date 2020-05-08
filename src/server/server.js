@@ -16,16 +16,24 @@ app.get("/", (req, res) => {
     res.sendFile("src/client/index.html");
 });
 
-let game;
+http.listen(port, () => {
+    console.log(`App is running on port ${port}`);
+});
 
-let destroyTimeout;
-
+let games = {};
+let gamesDestroyTimeout = {};
 let playerRemovalTimeout = {};
 
 io.on("connection", (socket) => {
-    if (game === undefined) {
-        game = new gameFactory.Game();
+    let gameId = support.getGameId(socket);
+    let game;
+    if (gameId === null || games[gameId] === undefined) {
+        let newGame = new gameFactory.Game();
+        gameId = newGame.id;
+        games[gameId] = newGame;
     }
+
+    game = games[gameId];
 
     if (game.addPlayer(support.getPlayerId(socket)) === false) {
         socket.emit("disconnected");
@@ -34,10 +42,10 @@ io.on("connection", (socket) => {
         return;
     }
 
-    if (game.hasPlayers() && destroyTimeout !== undefined) {
+    if (game.hasPlayers() && gamesDestroyTimeout[game.id] !== undefined) {
         console.info(`Game ${game.id} destruction canceled.`);
-        clearTimeout(destroyTimeout);
-        destroyTimeout = undefined;
+        clearTimeout(gamesDestroyTimeout[game.id]);
+        delete gamesDestroyTimeout[game.id];
     }
 
     if (playerRemovalTimeout[support.getPlayerId(socket)] !== undefined) {
@@ -71,9 +79,9 @@ io.on("connection", (socket) => {
 
             if (!game.hasPlayers()) {
                 console.info(`All players have left. Game ${game.id} will be destroyed in 60 seconds`);
-                destroyTimeout = setTimeout(() => {
+                gamesDestroyTimeout[game.id] = setTimeout(() => {
                     console.info(`Game ${game.id} was destroyed.`)
-                    game = new gameFactory.Game(uuid());
+                    delete games[game.id];
                 }, 60 * 1000);
             }
 
@@ -94,16 +102,10 @@ io.on("connection", (socket) => {
             setTimeout(() => {
                 game = new gameFactory.Game(game.players, game.winner === "N" ? "X" : game.winner);
 
-                io.emit("game reset", game.currentTurn);
+                io.emit("game reset", game);
             }, 10000)
         } else {
             socket.broadcast.emit("move", selectedCellId, game.getSymbol(playerId), game.currentTurn);
         }
     })
-});
-
-
-
-http.listen(port, () => {
-    console.log(`App is running on port ${port}`);
 });
