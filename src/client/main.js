@@ -1,27 +1,30 @@
-
-const buttons = document.querySelectorAll("button");
+const cells = document.querySelectorAll("button");
+const playerX = document.getElementById("player-x");
+const playerXStatus = document.getElementById("player-x-status");
+const playerO = document.getElementById("player-o");
+const playerOStatus = document.getElementById("player-o-status");
 
 const socket = io();
 
 let playerSymbol;
 
-function cleanAllFields() {
-    buttons.forEach(b => b.innerText = "");
+function cleanAllCells() {
+    cells.forEach(b => b.innerText = "");
 }
 
-function disableAllFields() {
-    buttons.forEach(b => b.disabled = true);
+function disableAllCells() {
+    cells.forEach(b => b.disabled = true);
 }
 
-function enableEmptyFields() {
-    buttons.forEach(b => {
+function enableEmptyCells() {
+    cells.forEach(b => {
         if (b.innerText === "" || b.innerText === undefined) {
             b.disabled = false
         }
     });
 }
 
-buttons.forEach(b => {
+cells.forEach(b => {
     b.addEventListener("click", (evt) => {
         if (evt.target.disabled) {
             console.log(`Button ${evt.target.id} is disabled`);
@@ -29,37 +32,80 @@ buttons.forEach(b => {
         }
         evt.preventDefault();
         evt.target.innerText = playerSymbol;
-        socket.emit("cell selected", evt.currentTarget.id, playerSymbol);
-        disableAllFields();
+        socket.emit("move", evt.currentTarget.id, playerSymbol);
+        disableAllCells();
+        playerX.classList.toggle("current");
+        playerO.classList.toggle("current");
     });
 });
 
-socket.on("cell selected", (btn, value, currentTurn) => {
+socket.on("move", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
 
     if (currentTurn === playerSymbol) {
-        enableEmptyFields();
+        enableEmptyCells();
+    }
+
+    if (currentTurn === "X") {
+        playerX.classList.add("current");
+        playerO.classList.remove("current");
+    } else {
+        playerO.classList.add("current");
+        playerX.classList.remove("current");
     }
 });
 
-socket.on("joined", (value, name) => {
-    playerSymbol = value;
-    document.getElementById("chat").innerText = "You've joined the game, your symbol is " + value;
-    document.getElementById("title").innerText = name;
+socket.on("joined", (status) => {
+    playerSymbol = status.joinedAs;
+    document.getElementById("chat").innerText = "You've joined the game, your symbol is " + playerSymbol;
+
+    if (playerSymbol === "X") {
+        playerXStatus.innerText = "You";
+
+        if (status.playerOStatus) {
+            playerOStatus.innerText = "Online";
+        } else {
+            playerOStatus.innerText = "Offline";
+        }
+    } else {
+        playerOStatus.innerText = "You";
+
+        if (status.playerXStatus) {
+            playerXStatus.innerText = "Online";
+        } else {
+            playerXStatus.innerText = "Offline";
+        }
+    }
+
+    Object.keys(status.field).forEach(key => {
+        document.getElementById(key).innerText = status.field[key];
+    })
+
+    if (status.currentTurn === playerSymbol) {
+        enableEmptyCells();
+    }
+
+    status.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
 });
+
+socket.on("player joined", (anotherPlayer) => {
+    if (anotherPlayer === "X") {
+        playerXStatus.innerText = "Online";
+    }else if (anotherPlayer === "O") {
+        playerOStatus.innerText = "Online";
+    }
+})
+
+socket.on("player left", (anotherPlayer) => {
+    if (anotherPlayer === "X") {
+        playerXStatus.innerText = "Offline";
+    } else if (anotherPlayer === "O") {
+        playerOStatus.innerText = "Offline";
+    }
+})
 
 socket.on("disconnected", () => {
     document.getElementById("chat").innerText = "This game already has 2 players";
-})
-
-socket.on("retrieve field", (field, currentTurn) => {
-    Object.keys(field).forEach(key => {
-        document.getElementById(key).innerText = field[key];
-    })
-
-    if (currentTurn === playerSymbol) {
-        enableEmptyFields();
-    }
 })
 
 socket.on("game end", (winner) => {
@@ -71,16 +117,37 @@ socket.on("game end", (winner) => {
         document.getElementById("chat").innerText = `Player ${winner} has won.`;
     }
 
-    disableAllFields();
+    if(winner === "X") {
+        playerX.classList.add("winner");
+        playerX.classList.add("current");
+        playerO.classList.remove("current");
+    } else if (winner === "O") {
+        playerO.classList.add("winner");
+        playerO.classList.add("current");
+        playerX.classList.remove("current");
+    }
+
+    disableAllCells();
 })
 
 socket.on("game reset", (currentTurn) => {
-    cleanAllFields();
+    cleanAllCells();
     document.getElementById("chat").innerText = "Game was restarted!";
 
     if (currentTurn === playerSymbol) {
-        enableEmptyFields();
+        enableEmptyCells();
     }
+
+    if (currentTurn === "X") {
+        playerX.classList.add("current");
+        playerO.classList.remove("current");
+    } else {
+        playerO.classList.add("current");
+        playerX.classList.remove("current");
+    }
+
+    playerX.classList.remove("winner");
+    playerO.classList.remove("winner");
 })
 
 

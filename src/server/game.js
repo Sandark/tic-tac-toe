@@ -24,6 +24,10 @@ function Game(id, players = {}, currentTurn = "X") {
         return Object.keys(this.players).length > 0;
     }
 
+    this.hasPlayer = (symbol) => {
+        return Object.values(players).includes(symbol);
+    }
+
     this.getSymbol = (id) => {
         return this.players[id];
     }

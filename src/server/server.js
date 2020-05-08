@@ -42,11 +42,19 @@ io.on("connection", (socket) => {
 
     console.log(`A user connected ${getPlayerId(socket)}`);
 
-    socket.emit("joined", game.getSymbol(getPlayerId(socket)), `Player ${game.getSymbol(getPlayerId(socket))}`);
-    socket.emit("retrieve field", game.field, game.currentTurn)
+    socket.emit("joined", {
+        joinedAs: game.getSymbol(getPlayerId(socket)),
+        playerXStatus: game.hasPlayer("X"),
+        playerOStatus: game.hasPlayer("O"),
+        field: game.field,
+        currentTurn: game.currentTurn
+    });
+
+    socket.broadcast.emit("player joined", game.getSymbol(getPlayerId(socket)));
 
     socket.on('disconnect', () => {
         console.info(`user disconnected ${getPlayerId(socket)}`);
+        io.emit("player left", game.getSymbol(getPlayerId(socket)));
         game.deletePlayer(getPlayerId(socket));
 
         if (!game.hasPlayers()) {
@@ -54,17 +62,17 @@ io.on("connection", (socket) => {
             destroyTimeout = setTimeout(() => {
                 console.info(`Game ${game.id} was destroyed.`)
                 game = new gameFactory.Game(uuid());
-            }, 60*1000);
+            }, 60 * 1000);
         }
     });
 
-    socket.on("cell selected", (selectedCellId) => {
+    socket.on("move", (selectedCellId) => {
         console.log(`Button with id ${selectedCellId} was pressed by user ${getPlayerId(socket)}`);
 
         game.makeTurn(getPlayerId(socket), selectedCellId);
-        socket.broadcast.emit("cell selected", selectedCellId, game.getSymbol(getPlayerId(socket)), game.currentTurn);
 
         if (game.winner !== undefined) {
+            socket.broadcast.emit("move", selectedCellId, game.getSymbol(getPlayerId(socket)), game.winner);
             io.emit("game end", game.winner);
 
             setTimeout(() => {
@@ -72,6 +80,8 @@ io.on("connection", (socket) => {
 
                 io.emit("game reset", game.currentTurn);
             }, 10000)
+        } else {
+            socket.broadcast.emit("move", selectedCellId, game.getSymbol(getPlayerId(socket)), game.currentTurn);
         }
     })
 });

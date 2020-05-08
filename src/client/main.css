@@ -44,7 +44,47 @@ h1 {
     font-style: italic;
 }
 
-@media(max-resolution: 120dpi) {
+.players {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 10px 0;
+    color: #7b7b7b;
+}
+
+.player {
+    width: 40%;
+    display: flex;
+    flex-direction: row;
+    font-size: 40px;
+}
+
+#player-o {
+    flex-direction: row-reverse;
+}
+
+.player-symbol {
+    height: 40px;
+    width: 40px;
+    text-align: center;
+}
+
+.player.status {
+
+}
+
+.current {
+    border: 1px solid #424242;
+    background: #b3b2b2;
+    color: #000;
+}
+
+.winner {
+    border: 1px solid #ffff00;
+    box-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
+}
+
+@media(max-resolution: 120dpi) and (min-width: 600px) {
     .field {
         height: 450px;
         width: 450px;
@@ -54,4 +94,5 @@ h1 {
         line-height: 140px;
         font-size: 140px;
     }
+
 }
