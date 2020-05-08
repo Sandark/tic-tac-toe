@@ -3,6 +3,7 @@ const playerX = document.getElementById("player-x");
 const playerXStatus = document.getElementById("player-x-status");
 const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
+const gameIdInput = document.getElementById("game-id-input");
 
 const joinGameButton = document.getElementById("join-socket");
 
@@ -14,6 +15,11 @@ let socket = io("/",
 let playerSymbol;
 
 joinGameButton.addEventListener("click", () => {
+    eraseCookie("gameId");
+    if (gameIdInput.value !== "") {
+        createCookie("gameId", gameIdInput.value);
+    }
+
     if (!socket.connected) {
         socket.open();
     }
@@ -50,8 +56,6 @@ function enableEmptyCells() {
     });
 }
 
-
-
 socket.on("move", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
 
@@ -68,21 +72,24 @@ socket.on("move", (btn, value, currentTurn) => {
     }
 });
 
-socket.on("joined", (status) => {
-    if (readCookie("userId") !== status.playerId) {
-        createCookie("userId", status.playerId, 1);
+socket.on("id generated", (userId) => {
+    if (readCookie("userId") !== userId) {
+        createCookie("userId", userId, 1);
     }
+})
 
+socket.on("joined", (game) => {
     eraseCookie("gameId");
-    createCookie("gameId", status.gameId);
+    createCookie("gameId", game.id);
+    gameIdInput.value = game.id;
 
-    playerSymbol = status.joinedAs;
-    document.getElementById("chat").innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${status.gameId}`;
+    playerSymbol = game.getSymbol(readCookie("userId"));
+    document.getElementById("chat").innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${game.id}`;
 
     if (playerSymbol === "X") {
         playerXStatus.innerText = "You";
 
-        if (status.playerOStatus) {
+        if (Object.values(game.players).includes("O")) {
             playerOStatus.innerText = "Online";
         } else {
             playerOStatus.innerText = "Offline";
@@ -90,22 +97,22 @@ socket.on("joined", (status) => {
     } else {
         playerOStatus.innerText = "You";
 
-        if (status.playerXStatus) {
+        if (Object.values(game.players).includes("X")) {
             playerXStatus.innerText = "Online";
         } else {
             playerXStatus.innerText = "Offline";
         }
     }
 
-    Object.keys(status.field).forEach(key => {
-        document.getElementById(key).innerText = status.field[key];
+    Object.keys(game.field).forEach(key => {
+        document.getElementById(key).innerText = game.field[key];
     })
 
-    if (status.currentTurn === playerSymbol) {
+    if (game.currentTurn === playerSymbol) {
         enableEmptyCells();
     }
 
-    status.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
+    game.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
 });
 
 socket.on("player joined", (anotherPlayer) => {
@@ -150,15 +157,15 @@ socket.on("game end", (winner) => {
     disableAllCells();
 })
 
-socket.on("game reset", (currentTurn) => {
+socket.on("game reset", (game) => {
     cleanAllCells();
     document.getElementById("chat").innerText = "Game was restarted!";
 
-    if (currentTurn === playerSymbol) {
+    if (game.currentTurn === playerSymbol) {
         enableEmptyCells();
     }
 
-    if (currentTurn === "X") {
+    if (game.currentTurn === "X") {
         playerX.classList.add("current");
         playerO.classList.remove("current");
     } else {

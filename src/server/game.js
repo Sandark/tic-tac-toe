@@ -70,6 +70,10 @@ function Game(players = {}, currentTurn = "X") {
             this.winner = "N";
         }
     }
+
+    this.finished = () => {
+        return this.winner !== undefined;
+    }
 }
 
 module.exports = {

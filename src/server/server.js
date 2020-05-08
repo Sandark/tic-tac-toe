@@ -55,32 +55,27 @@ io.on("connection", (socket) => {
 
     console.log(`A user connected ${support.getPlayerId(socket)}`);
 
-    socket.emit("joined", {
-        playerId: support.getPlayerId(socket) || support.getRandomId(),
-        gameId: game.id,
-        joinedAs: game.getSymbol(support.getPlayerId(socket)),
-        playerXStatus: game.hasPlayer("X"),
-        playerOStatus: game.hasPlayer("O"),
-        field: game.field,
-        currentTurn: game.currentTurn
-    });
+    if (!support.getPlayerId(socket)) {
+        socket.emit("id generated", support.getRandomId());
+    }
+    socket.emit("joined", game);
 
     socket.broadcast.emit("player joined", game.getSymbol(support.getPlayerId(socket)));
 
     socket.on('disconnect', () => {
         const playerId = support.getPlayerId(socket);
+        const currentGame = games[support.getGameId(socket)] || Object.values(games).find(g => g.getSymbol(playerId) !== undefined);
 
         console.info(`user disconnected ${playerId}`);
-        io.emit("player left", game.getSymbol(playerId));
-        io.emit("player left", game.getSymbol(playerId));
+        io.emit("player left", currentGame.getSymbol(playerId));
 
         playerRemovalTimeout[playerId] = setTimeout(() => {
-            game.deletePlayer(playerId);
+            currentGame.deletePlayer(playerId);
 
-            if (!game.hasPlayers()) {
-                console.info(`All players have left. Game ${game.id} will be destroyed in 60 seconds`);
-                gamesDestroyTimeout[game.id] = setTimeout(() => {
-                    console.info(`Game ${game.id} was destroyed.`)
+            if (!currentGame.hasPlayers()) {
+                console.info(`All players have left. Game ${currentGame.id} will be destroyed in 60 seconds`);
+                gamesDestroyTimeout[currentGame.id] = setTimeout(() => {
+                    console.info(`Game ${currentGame.id} was destroyed.`)
                     delete games[game.id];
                 }, 60 * 1000);
             }
@@ -90,22 +85,24 @@ io.on("connection", (socket) => {
 
     socket.on("move", (selectedCellId) => {
         const playerId = support.getPlayerId(socket);
+        const currentGame = games[support.getGameId(socket)] || Object.values(games).find(g => g.getSymbol(playerId) !== undefined);
 
         console.log(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
 
-        game.makeTurn(playerId, selectedCellId);
+        currentGame.makeTurn(playerId, selectedCellId);
 
-        if (game.winner !== undefined) {
-            socket.broadcast.emit("move", selectedCellId, game.getSymbol(playerId), game.winner);
-            io.emit("game end", game.winner);
+        if (currentGame.finished()) {
+            socket.broadcast.emit("move", selectedCellId, currentGame.getSymbol(playerId), currentGame.winner);
+            io.emit("game end", currentGame.winner);
 
             setTimeout(() => {
-                game = new gameFactory.Game(game.players, game.winner === "N" ? "X" : game.winner);
+                let newGame = new gameFactory.Game(currentGame.players, currentGame.winner === "N" ? "X" : currentGame.winner);
+                games[newGame.id] = newGame;
 
-                io.emit("game reset", game);
+                io.emit("game reset", newGame);
             }, 10000)
         } else {
-            socket.broadcast.emit("move", selectedCellId, game.getSymbol(playerId), game.currentTurn);
+            socket.broadcast.emit("move", selectedCellId, currentGame.getSymbol(playerId), game.currentTurn);
         }
     })
 });
