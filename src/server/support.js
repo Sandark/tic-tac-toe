@@ -8,6 +8,10 @@ function getPlayerId(socket) {
     return readCookie("userId", socket.request.headers.cookie);
 }
 
+function getGameId(socket) {
+    return readCookie("gameId", socket.request.headers.cookie);
+}
+
 function readCookie(name, cookies) {
     let nameEQ = name + "=";
     let ca = cookies.split(';');
@@ -21,5 +25,6 @@ function readCookie(name, cookies) {
 
 module.exports = {
     getRandomId,
-    getPlayerId
+    getPlayerId,
+    getGameId
 }

@@ -1,12 +1,38 @@
-const cells = document.querySelectorAll("button");
+const cells = document.querySelectorAll(".cell");
 const playerX = document.getElementById("player-x");
 const playerXStatus = document.getElementById("player-x-status");
 const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
 
-const socket = io();
+const joinGameButton = document.getElementById("join-socket");
+
+let socket = io("/",
+    {
+        autoConnect: false
+    });
 
 let playerSymbol;
+
+joinGameButton.addEventListener("click", () => {
+    if (!socket.connected) {
+        socket.open();
+    }
+})
+
+cells.forEach(b => {
+    b.addEventListener("click", (evt) => {
+        if (evt.target.disabled) {
+            console.log(`Button ${evt.target.id} is disabled`);
+            return;
+        }
+        evt.preventDefault();
+        evt.target.innerText = playerSymbol;
+        socket.emit("move", evt.currentTarget.id, playerSymbol);
+        disableAllCells();
+        playerX.classList.toggle("current");
+        playerO.classList.toggle("current");
+    });
+});
 
 function cleanAllCells() {
     cells.forEach(b => b.innerText = "");
@@ -24,20 +50,7 @@ function enableEmptyCells() {
     });
 }
 
-cells.forEach(b => {
-    b.addEventListener("click", (evt) => {
-        if (evt.target.disabled) {
-            console.log(`Button ${evt.target.id} is disabled`);
-            return;
-        }
-        evt.preventDefault();
-        evt.target.innerText = playerSymbol;
-        socket.emit("move", evt.currentTarget.id, playerSymbol);
-        disableAllCells();
-        playerX.classList.toggle("current");
-        playerO.classList.toggle("current");
-    });
-});
+
 
 socket.on("move", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
@@ -60,8 +73,11 @@ socket.on("joined", (status) => {
         createCookie("userId", status.playerId, 1);
     }
 
+    eraseCookie("gameId");
+    createCookie("gameId", status.gameId);
+
     playerSymbol = status.joinedAs;
-    document.getElementById("chat").innerText = "You've joined the game, your symbol is " + playerSymbol;
+    document.getElementById("chat").innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${status.gameId}`;
 
     if (playerSymbol === "X") {
         playerXStatus.innerText = "You";
@@ -95,7 +111,7 @@ socket.on("joined", (status) => {
 socket.on("player joined", (anotherPlayer) => {
     if (anotherPlayer === "X") {
         playerXStatus.innerText = "Online";
-    }else if (anotherPlayer === "O") {
+    } else if (anotherPlayer === "O") {
         playerOStatus.innerText = "Online";
     }
 })
@@ -121,7 +137,7 @@ socket.on("game end", (winner) => {
         document.getElementById("chat").innerText = `Player ${winner} has won.`;
     }
 
-    if(winner === "X") {
+    if (winner === "X") {
         playerX.classList.add("winner");
         playerX.classList.add("current");
         playerO.classList.remove("current");
