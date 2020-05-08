@@ -14,21 +14,19 @@ h1 {
 
 .field {
     display: grid;
-    grid-auto-rows: 140px;
-    grid-template-columns: repeat(3, 140px);
+    grid-auto-rows: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    height: 450px;
-    width: 450px;
+    height: 600px;
+    width: 600px;
 }
 
 .cell {
-    height: 140px;
-    width: 140px;
-    line-height: 140px;
+    line-height: 200px;
     border: 1px solid #b3b2b2;
-    background: #e0e0e0;
+    background: #eeeeee;
     padding: 0;
-    font-size: 140px;
+    font-size: 200px;
     font-family: inherit;
 }
 
@@ -37,7 +35,23 @@ h1 {
     outline: none;
 }
 
+.cell:disabled {
+    background: #bfbfbf;
+}
+
 .chat {
     text-align: center;
     font-style: italic;
+}
+
+@media(max-resolution: 120dpi) {
+    .field {
+        height: 450px;
+        width: 450px;
+    }
+
+    .cell {
+        line-height: 140px;
+        font-size: 140px;
+    }
 }

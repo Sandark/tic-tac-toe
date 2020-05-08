@@ -1,8 +1,9 @@
-let socket = io();
 
-let buttons = document.querySelectorAll("button");
+const buttons = document.querySelectorAll("button");
 
-let char;
+const socket = io();
+
+let playerSymbol;
 
 function cleanAllFields() {
     buttons.forEach(b => b.innerText = "");
@@ -27,8 +28,8 @@ buttons.forEach(b => {
             return;
         }
         evt.preventDefault();
-        evt.target.innerText = char;
-        socket.emit("cell selected", evt.currentTarget.id, char);
+        evt.target.innerText = playerSymbol;
+        socket.emit("cell selected", evt.currentTarget.id, playerSymbol);
         disableAllFields();
     });
 });
@@ -36,18 +37,18 @@ buttons.forEach(b => {
 socket.on("cell selected", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
 
-    if (currentTurn === char) {
+    if (currentTurn === playerSymbol) {
         enableEmptyFields();
     }
 });
 
 socket.on("joined", (value, name) => {
-    char = value;
-    document.getElementById("chat").innerText = "You've joined the game, you char is " + value;
+    playerSymbol = value;
+    document.getElementById("chat").innerText = "You've joined the game, your symbol is " + value;
     document.getElementById("title").innerText = name;
 });
 
-socket.on("game full", () => {
+socket.on("disconnected", () => {
     document.getElementById("chat").innerText = "This game already has 2 players";
 })
 
@@ -56,20 +57,18 @@ socket.on("retrieve field", (field, currentTurn) => {
         document.getElementById(key).innerText = field[key];
     })
 
-    if (currentTurn === char) {
+    if (currentTurn === playerSymbol) {
         enableEmptyFields();
     }
 })
 
 socket.on("game end", (winner) => {
-    if (winner === undefined) {
+    if (winner === "N") {
         document.getElementById("chat").innerText = "This is draw! Game will be restarted in 10 sec.";
+    } else if (winner === playerSymbol) {
+        document.getElementById("chat").innerText = "Congratulation! You're the winner!";
     } else {
-        if (winner === char) {
-            document.getElementById("chat").innerText = "Congratulation! You're the winner!";
-        } else {
-            document.getElementById("chat").innerText = `Player ${winner} has won.`;
-        }
+        document.getElementById("chat").innerText = `Player ${winner} has won.`;
     }
 
     disableAllFields();
@@ -79,11 +78,9 @@ socket.on("game reset", (currentTurn) => {
     cleanAllFields();
     document.getElementById("chat").innerText = "Game was restarted!";
 
-    if (currentTurn === char) {
+    if (currentTurn === playerSymbol) {
         enableEmptyFields();
     }
 })
-// let url_string = window.location.href;
-// let url = new URL(url_string);
-// let id = url.searchParams.get("id");
-// console.log(id);
+
+

@@ -3,6 +3,8 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const bodyParser = require("body-parser");
+const {v4: uuid} = require("uuid");
+const gameFactory = require("./game.js");
 
 const port = process.env.PORT || 8080;
 
@@ -14,81 +16,68 @@ app.get("/", (req, res) => {
     res.sendFile("src/client/index.html");
 });
 
-let users = {};
-let field = {};
-let currentTurn = "X";
+let game;
 
-const winCombinations = ["012", "345", "678", "036", "147", "258", "148", "246"];
+let destroyTimeout;
 
 io.on("connection", (socket) => {
-    if (!Object.values(users).includes("X")) {
-        users[socket.id] = "X";
-        socket.emit("joined", "X", "Player X");
-    } else if (!Object.values(users).includes("O")) {
-        users[socket.id] = "O";
-        socket.emit("joined", "O", "Player O");
-    } else {
-        socket.emit("game full");
+    console.log("Cookies: " + socket.request.headers.cookie);
+
+    if (game === undefined) {
+        game = new gameFactory.Game(uuid());
+    }
+
+    if (game.addPlayer(getPlayerId(socket)) === false) {
+        socket.emit("disconnected");
         socket.disconnect(true);
+        console.log(`User was disconnected as game doesn't have more space ${getPlayerId(socket)}`);
         return;
     }
 
-    socket.emit("retrieve field", field, currentTurn)
+    if (game.hasPlayers() && destroyTimeout !== undefined) {
+        console.info(`Game ${game.id} destruction canceled.`);
+        clearTimeout(destroyTimeout);
+        destroyTimeout = undefined;
+    }
 
-    console.log(`A user connected ${socket.id} with ${users[socket.id]}`);
+    console.log(`A user connected ${getPlayerId(socket)}`);
+
+    socket.emit("joined", game.getSymbol(getPlayerId(socket)), `Player ${game.getSymbol(getPlayerId(socket))}`);
+    socket.emit("retrieve field", game.field, game.currentTurn)
 
     socket.on('disconnect', () => {
-        console.log(`user disconnected ${socket.id} with ${users[socket.id]}`);
-        delete users[socket.id];
+        console.info(`user disconnected ${getPlayerId(socket)}`);
+        game.deletePlayer(getPlayerId(socket));
+
+        if (!game.hasPlayers()) {
+            console.info(`All players have left. Game ${game.id} will be destroyed in 1 minute`);
+            destroyTimeout = setTimeout(() => {
+                console.info(`Game ${game.id} was destroyed.`)
+                game = new gameFactory.Game(uuid());
+            }, 60*1000);
+        }
     });
 
-    socket.on("cell selected", (btn, char) => {
-        console.log(`Button with id ${btn} was pressed with char ${char}`);
+    socket.on("cell selected", (selectedCellId) => {
+        console.log(`Button with id ${selectedCellId} was pressed by user ${getPlayerId(socket)}`);
 
-        field[btn] = char;
-        currentTurn = char === "X" ? "O" : "X";
-        socket.broadcast.emit("cell selected", btn, char, currentTurn);
+        game.makeTurn(getPlayerId(socket), selectedCellId);
+        socket.broadcast.emit("cell selected", selectedCellId, game.getSymbol(getPlayerId(socket)), game.currentTurn);
 
-        const winner = findWinner();
-
-        if (winner !== undefined) {
-            io.emit("game end", winner);
+        if (game.winner !== undefined) {
+            io.emit("game end", game.winner);
 
             setTimeout(() => {
-                field = {};
-                currentTurn = winner;
+                game = new gameFactory.Game(uuid(), game.players, game.winner);
 
-                io.emit("game reset", currentTurn);
-            }, 10000)
-        } else if (Object.keys(field).length === 9) {
-            io.emit("game end");
-
-            setTimeout(() => {
-                field = {};
-                currentTurn = "X";
-
-                io.emit("game reset", currentTurn);
+                io.emit("game reset", game.currentTurn);
             }, 10000)
         }
     })
 });
 
-function findWinner() {
-    let winner;
-    for (let c of winCombinations) {
-        let combination = "";
-        for (let n of c.split("")) {
-            if (field["c" + n] !== undefined) {
-                combination += field["c" + n];
-            }
-        }
-
-        if (combination === "XXX") {
-           return  "X";
-        } else if (combination === "OOO") {
-            return "O";
-        }
-    }
+function getPlayerId(socket) {
+    return socket.id;
 }
 
 http.listen(port, () => {
