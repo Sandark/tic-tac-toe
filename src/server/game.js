@@ -1,13 +1,18 @@
+const support = require("./support");
 const winCombinations = ["012", "345", "678", "036", "147", "258", "048", "246"];
 
-function Game(id, players = {}, currentTurn = "X") {
-    this.id = id;
+function Game(players = {}, currentTurn = "X") {
+    this.id = support.getRandomId();
     this.players = players;
     this.field = {};
     this.winner = undefined;
     this.currentTurn = currentTurn;
 
     this.addPlayer = (id) => {
+        if (Object.keys(this.players).includes(id)) {
+            return true;
+        }
+
         if (Object.keys(this.players).length === 2) {
             return false;
         } else {

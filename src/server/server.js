@@ -3,8 +3,8 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const bodyParser = require("body-parser");
-const {v4: uuid} = require("uuid");
-const gameFactory = require("./game.js");
+const gameFactory = require("./game");
+const support = require("./support");
 
 const port = process.env.PORT || 8080;
 
@@ -20,17 +20,17 @@ let game;
 
 let destroyTimeout;
 
-io.on("connection", (socket) => {
-    console.log("Cookies: " + socket.request.headers.cookie);
+let playerRemovalTimeout = {};
 
+io.on("connection", (socket) => {
     if (game === undefined) {
-        game = new gameFactory.Game(uuid());
+        game = new gameFactory.Game();
     }
 
-    if (game.addPlayer(getPlayerId(socket)) === false) {
+    if (game.addPlayer(support.getPlayerId(socket)) === false) {
         socket.emit("disconnected");
         socket.disconnect(true);
-        console.log(`User was disconnected as game doesn't have more space ${getPlayerId(socket)}`);
+        console.log(`User was disconnected as game doesn't have more space ${support.getPlayerId(socket)}`);
         return;
     }
 
@@ -40,57 +40,70 @@ io.on("connection", (socket) => {
         destroyTimeout = undefined;
     }
 
-    console.log(`A user connected ${getPlayerId(socket)}`);
+    if (playerRemovalTimeout[support.getPlayerId(socket)] !== undefined) {
+        clearTimeout(playerRemovalTimeout[support.getPlayerId(socket)]);
+        delete playerRemovalTimeout[support.getPlayerId(socket)];
+    }
+
+    console.log(`A user connected ${support.getPlayerId(socket)}`);
 
     socket.emit("joined", {
-        joinedAs: game.getSymbol(getPlayerId(socket)),
+        playerId: support.getPlayerId(socket) || support.getRandomId(),
+        gameId: game.id,
+        joinedAs: game.getSymbol(support.getPlayerId(socket)),
         playerXStatus: game.hasPlayer("X"),
         playerOStatus: game.hasPlayer("O"),
         field: game.field,
         currentTurn: game.currentTurn
     });
 
-    socket.broadcast.emit("player joined", game.getSymbol(getPlayerId(socket)));
+    socket.broadcast.emit("player joined", game.getSymbol(support.getPlayerId(socket)));
 
     socket.on('disconnect', () => {
-        console.info(`user disconnected ${getPlayerId(socket)}`);
-        io.emit("player left", game.getSymbol(getPlayerId(socket)));
-        game.deletePlayer(getPlayerId(socket));
+        const playerId = support.getPlayerId(socket);
 
-        if (!game.hasPlayers()) {
-            console.info(`All players have left. Game ${game.id} will be destroyed in 1 minute`);
-            destroyTimeout = setTimeout(() => {
-                console.info(`Game ${game.id} was destroyed.`)
-                game = new gameFactory.Game(uuid());
-            }, 60 * 1000);
-        }
+        console.info(`user disconnected ${playerId}`);
+        io.emit("player left", game.getSymbol(playerId));
+        io.emit("player left", game.getSymbol(playerId));
+
+        playerRemovalTimeout[playerId] = setTimeout(() => {
+            game.deletePlayer(playerId);
+
+            if (!game.hasPlayers()) {
+                console.info(`All players have left. Game ${game.id} will be destroyed in 60 seconds`);
+                destroyTimeout = setTimeout(() => {
+                    console.info(`Game ${game.id} was destroyed.`)
+                    game = new gameFactory.Game(uuid());
+                }, 60 * 1000);
+            }
+
+        }, 30 * 1000)
     });
 
     socket.on("move", (selectedCellId) => {
-        console.log(`Button with id ${selectedCellId} was pressed by user ${getPlayerId(socket)}`);
+        const playerId = support.getPlayerId(socket);
 
-        game.makeTurn(getPlayerId(socket), selectedCellId);
+        console.log(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
+
+        game.makeTurn(playerId, selectedCellId);
 
         if (game.winner !== undefined) {
-            socket.broadcast.emit("move", selectedCellId, game.getSymbol(getPlayerId(socket)), game.winner);
+            socket.broadcast.emit("move", selectedCellId, game.getSymbol(playerId), game.winner);
             io.emit("game end", game.winner);
 
             setTimeout(() => {
-                game = new gameFactory.Game(uuid(), game.players, game.winner);
+                game = new gameFactory.Game(game.players, game.winner === "N" ? "X" : game.winner);
 
                 io.emit("game reset", game.currentTurn);
             }, 10000)
         } else {
-            socket.broadcast.emit("move", selectedCellId, game.getSymbol(getPlayerId(socket)), game.currentTurn);
+            socket.broadcast.emit("move", selectedCellId, game.getSymbol(playerId), game.currentTurn);
         }
     })
 });
 
-function getPlayerId(socket) {
-    return socket.id;
-}
+
 
 http.listen(port, () => {
     console.log(`App is running on port ${port}`);
 });
-
