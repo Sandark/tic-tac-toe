@@ -28,7 +28,6 @@ http.listen(port, () => {
 
 let games = {};
 let gamesDestroyTimeout = {};
-let playerRemovalTimeout = {};
 
 io.on("connection", (socket) => {
     console.log(`A user connected ${support.getPlayerId(socket)}`);
@@ -79,11 +78,6 @@ function onJoinedGamed(game, socket) {
         delete gamesDestroyTimeout[game.id];
     }
 
-    if (playerRemovalTimeout[support.getPlayerId(socket)] !== undefined) {
-        clearTimeout(playerRemovalTimeout[support.getPlayerId(socket)]);
-        delete playerRemovalTimeout[support.getPlayerId(socket)];
-    }
-
     socket.emit("joined.game", game.getState(support.getPlayerId(socket)));
     socket.to(game.id).emit("joined.player", game.getSymbol(support.getPlayerId(socket)));
 }
@@ -128,18 +122,15 @@ function onDisconnect(socket) {
         console.info(`Player ${playerId} was disconnected from game ${currentGame.id}.`);
         io.to(currentGame.id).emit("disconnected.player", currentGame.getSymbol(playerId));
 
-        playerRemovalTimeout[playerId] = setTimeout(() => {
-            currentGame.deletePlayer(playerId);
+        currentGame.deletePlayer(playerId);
 
-            if (!currentGame.hasPlayers()) {
-                console.info(`All players have left. Game ${currentGame.id} will be destroyed in 60 seconds`);
-                gamesDestroyTimeout[currentGame.id] = setTimeout(() => {
-                    console.info(`Game ${currentGame.id} was destroyed.`)
-                    delete games[currentGame.id];
-                }, 60 * 1000);
-            }
-
-        }, 30 * 1000)
+        if (!currentGame.hasPlayers()) {
+            console.info(`All players have left. Game ${currentGame.id} will be destroyed in 60 seconds`);
+            gamesDestroyTimeout[currentGame.id] = setTimeout(() => {
+                console.info(`Game ${currentGame.id} was destroyed.`)
+                delete games[currentGame.id];
+            }, 60 * 1000);
+        }
     };
 }
 

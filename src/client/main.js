@@ -51,6 +51,7 @@ disconnectButton.addEventListener("click", () => {
     }
 
     disableAllCells();
+    cleanAllCells();
     gameIdInput.value = "";
 });
 
