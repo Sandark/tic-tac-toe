@@ -10,26 +10,38 @@ body {
     flex-direction: column;
     align-items: center;
     margin: auto;
+    width: 800px;
+    min-width: 800px;
+}
+
+.field_wrapper {
+    width: 100%;
+    padding-bottom: 100%;
+    position: relative;
 }
 
 .field {
+    position: absolute;
     display: grid;
     grid-auto-rows: 1fr;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    height: 600px;
-    width: 600px;
+    grid-template-columns: repeat(3, 32%);
+    gap: 2%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
 }
 
 .cell {
-    line-height: 200px;
     border: 1px solid #b3b2b2;
     background: #eeeeee;
     padding: 0;
-    font-size: 200px;
+    font-size: 250px;
     font-family: inherit;
     font-weight: 600;
     transition: background-color 0.3s ease-out;
+    line-height: 250px;
 }
 
 .cell:focus {
@@ -61,7 +73,7 @@ body {
     height: 1.2em;
     display: flex;
     flex-direction: row;
-    font-size: 40px;
+    font-size: 2em;
     border: 1px solid transparent;
     background: transparent;
     transition: background-color 0.3s ease-in, border 0.3s ease-in;
@@ -72,10 +84,9 @@ body {
 }
 
 .player-symbol {
-    height: 40px;
-    width: 40px;
     text-align: center;
     font-weight: 500;
+    margin: 0 0.2em;
 }
 
 .status {
@@ -96,6 +107,7 @@ body {
 .game_menu {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .input_box {
@@ -123,14 +135,14 @@ body {
         font-size: 16px;
     }
 
-    .field {
-        height: 450px;
-        width: 450px;
+    .container {
+        min-width: 500px;
+        width: 500px;
     }
 
     .cell {
-        line-height: 140px;
-        font-size: 140px;
+        font-size: 158px;
+        line-height: 158px;
     }
 
     .chat {
