@@ -93,36 +93,28 @@ function onMoveMade(socket) {
         const playerId = support.getPlayerId(socket);
         const currentGame = getGame(playerId);
 
+        if (currentGame === undefined) {
+            return;
+        }
+
         console.log(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
 
         currentGame.makeTurn(playerId, selectedCellId);
 
         if (currentGame.finished()) {
-            socket.broadcast.emit("move", selectedCellId, currentGame.getSymbol(playerId), currentGame.winner);
-            io.emit("game end", currentGame.winner);
+            socket.to(currentGame.id).emit("moved.player", selectedCellId, currentGame.getSymbol(playerId), currentGame.winner);
+            io.to(currentGame.id).emit("game end", currentGame.winner);
 
             setTimeout(() => {
-                let newGame = new gameFactory.Game(currentGame.players, currentGame.winner === "N" ? "X" : currentGame.winner);
+                let newGame = new gameFactory.Game(currentGame.id, currentGame.players, currentGame.winner === "N" ? "X" : currentGame.winner);
                 games[newGame.id] = newGame;
 
-                io.emit("game reset", newGame);
+                io.emit("restarted.game", newGame);
             }, 10000)
         } else {
-            socket.broadcast.emit("move", selectedCellId, currentGame.getSymbol(playerId), currentGame.currentTurn);
+            socket.to(currentGame.id).emit("moved.player", selectedCellId, currentGame.getSymbol(playerId), currentGame.currentTurn);
         }
     };
-}
-
-function getGame(playerId) {
-    let gameId = Object.values(games).find(g => g.getSymbol(playerId) !== undefined);
-
-    if (gameId === null || games[gameId] === undefined) {
-        let newGame = new gameFactory.Game();
-        gameId = newGame.id;
-        games[gameId] = newGame;
-    }
-
-    return games[gameId];
 }
 
 function onDisconnect(socket) {
@@ -130,8 +122,12 @@ function onDisconnect(socket) {
         const playerId = support.getPlayerId(socket);
         const currentGame = getGame(playerId);
 
+        if (currentGame === undefined) {
+            return;
+        }
+
         console.info(`Player ${playerId} was disconnected from game ${currentGame.id}.`);
-        io.to(currentGame.id).emit("player left", currentGame.getSymbol(playerId));
+        io.to(currentGame.id).emit("disconnected.player", currentGame.getSymbol(playerId));
 
         playerRemovalTimeout[playerId] = setTimeout(() => {
             currentGame.deletePlayer(playerId);
@@ -146,4 +142,8 @@ function onDisconnect(socket) {
 
         }, 30 * 1000)
     };
+}
+
+function getGame(playerId) {
+    return Object.values(games).find(g => g.getSymbol(playerId) !== undefined);
 }
