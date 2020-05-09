@@ -5,8 +5,8 @@ const playerXStatus = document.getElementById("player-x-status");
 const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
-const chat = document.getElementById("chat");
 const gameWinner = document.querySelector(".game_winner");
+const score = document.querySelector("#score");
 
 const joinGameButton = document.getElementById("join-game");
 const startNewButton = document.getElementById("start-new");
@@ -22,6 +22,7 @@ let playerSymbol;
 let opponentSymbol;
 
 disableAllCells();
+gameIdInput.value = "";
 
 /* Setup listeners for buttons */
 joinGameButton.addEventListener("click", () => {
@@ -109,12 +110,11 @@ function enableEmptyCells() {
 }
 
 socket.on("disconnected", () => {
-    chat.innerText = "This game already has 2 players";
+
 })
 
 socket.on("wrong.game", () => {
     socket.close();
-    chat.innerText = "Game ID doesn't exist. Try another one."
     gameIdInput.classList.add("error");
 });
 
@@ -151,16 +151,16 @@ socket.on("joined.game", (gameState) => {
         enableEmptyCells();
     }
 
+    score.innerText = gameState.score;
     gameState.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
 });
 
-socket.on("restarted.game", (game) => {
+socket.on("restarted.game", (gameState) => {
     cleanAllCells();
     field.classList.remove("field_blurred");
     gameWinner.classList.remove("visible");
-    chat.innerText = "Game was restarted!";
 
-    if (game.currentTurn === playerSymbol) {
+    if (gameState.currentTurn === playerSymbol) {
         enableEmptyCells();
     }
 
@@ -168,19 +168,13 @@ socket.on("restarted.game", (game) => {
     playerO.classList.remove("winner");
 })
 
-socket.on("finished.game", (winner) => {
+socket.on("finished.game", (gameState) => {
     disableAllCells();
-    field.classList.add("field_blurred");
-    gameWinner.innerText = winner;
-    gameWinner.classList.add("visible");
 
-    if (winner === "XO") {
-        chat.innerText = "This is draw! Game will be restarted in 10 sec.";
-    } else if (winner === playerSymbol) {
-        chat.innerText = "Congratulation! You're the winner!\nThe Game will be restarted in 10 sec.";
-    } else {
-        chat.innerText = `Player ${winner} has won.\nThe Game will be restarted in 10 sec.`;
-    }
+    score.innerText = gameState.score;
+    field.classList.add("field_blurred");
+    gameWinner.innerText = gameState.winner;
+    gameWinner.classList.add("visible");
 
     playerO.classList.remove("current");
     playerX.classList.remove("current");
