@@ -31,6 +31,31 @@ body {
     left: 0;
     bottom: 0;
     right: 0;
+    filter: blur(0);
+    transition: filter 1s ease-out;
+}
+
+.field_blurred {
+    filter: blur(6px);
+}
+
+.game_winner {
+    display: flex;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    justify-content: space-around;
+    align-items: center;
+    font-size: 15em;
+    color: transparent;
+    transition: color 1s ease-out;
+    user-select: none;
+    pointer-events: none;
+}
+
+.game_winner.visible {
+    color: #000;
+    text-shadow: 0 0 50px #000000;
 }
 
 .cell {
@@ -97,11 +122,6 @@ body {
     border: 1px solid #424242;
     background: #b3b2b2;
     color: #000;
-}
-
-.winner {
-    border: 1px solid #ffff00;
-    box-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
 }
 
 .game_menu {
