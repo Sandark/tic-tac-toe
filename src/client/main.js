@@ -1,3 +1,4 @@
+const field = document.getElementById("game-field");
 const cells = document.querySelectorAll(".cell");
 const playerX = document.getElementById("player-x");
 const playerXStatus = document.getElementById("player-x-status");
@@ -5,6 +6,7 @@ const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
 const chat = document.getElementById("chat");
+const gameWinner = document.querySelector(".game_winner");
 
 const joinGameButton = document.getElementById("join-game");
 const startNewButton = document.getElementById("start-new");
@@ -154,6 +156,8 @@ socket.on("joined.game", (gameState) => {
 
 socket.on("restarted.game", (game) => {
     cleanAllCells();
+    field.classList.remove("field_blurred");
+    gameWinner.classList.remove("visible");
     chat.innerText = "Game was restarted!";
 
     if (game.currentTurn === playerSymbol) {
@@ -166,8 +170,11 @@ socket.on("restarted.game", (game) => {
 
 socket.on("finished.game", (winner) => {
     disableAllCells();
+    field.classList.add("field_blurred");
+    gameWinner.innerText = winner;
+    gameWinner.classList.add("visible");
 
-    if (winner === "N") {
+    if (winner === "XO") {
         chat.innerText = "This is draw! Game will be restarted in 10 sec.";
     } else if (winner === playerSymbol) {
         chat.innerText = "Congratulation! You're the winner!\nThe Game will be restarted in 10 sec.";
@@ -175,15 +182,8 @@ socket.on("finished.game", (winner) => {
         chat.innerText = `Player ${winner} has won.\nThe Game will be restarted in 10 sec.`;
     }
 
-    if (winner === "X") {
-        playerX.classList.add("winner");
-        playerX.classList.add("current");
-        playerO.classList.remove("current");
-    } else if (winner === "O") {
-        playerO.classList.add("winner");
-        playerO.classList.add("current");
-        playerX.classList.remove("current");
-    }
+    playerO.classList.remove("current");
+    playerX.classList.remove("current");
 });
 
 socket.on("joined.player", (anotherPlayer) => {

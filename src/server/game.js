@@ -69,7 +69,7 @@ function Game(id = support.getRandomId(5).toUpperCase(),
         }
 
         if (this.winner === undefined && Object.keys(this.field).length === 9) {
-            this.winner = "N";
+            this.winner = "XO";
         }
     }
 
