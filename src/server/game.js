@@ -1,14 +1,14 @@
 const support = require("./support");
 const winCombinations = ["012", "345", "678", "036", "147", "258", "048", "246"];
 
-function Game(id = support.getRandomId(5).toUpperCase(),
-              players = {},
-              currentTurn = "X") {
+function Game(id = support.getRandomId(5).toUpperCase()) {
     this.id = id;
-    this.players = players;
+    this.players = {};
     this.field = {};
     this.winner = undefined;
-    this.currentTurn = currentTurn;
+    this.currentTurn = "X";
+    this.xWin = 0;
+    this.oWin = 0;
 
     this.addPlayer = (id) => {
         if (Object.keys(this.players).includes(id)) {
@@ -32,11 +32,11 @@ function Game(id = support.getRandomId(5).toUpperCase(),
     }
 
     this.getOpponent = (playerId) => {
-        return Object.keys(players).find(p => p !== playerId);
+        return Object.keys(this.players).find(p => p !== playerId);
     }
 
-    this.getSymbol = (id) => {
-        return this.players[id];
+    this.getSymbol = (playerId) => {
+        return this.players[playerId];
     }
 
     this.makeTurn = (id, selectedCell) => {
@@ -63,8 +63,12 @@ function Game(id = support.getRandomId(5).toUpperCase(),
 
             if (rowValues === "XXX") {
                 this.winner = "X";
+                this.xWin++;
+                break;
             } else if (rowValues === "OOO") {
                 this.winner = "O";
+                this.oWin++;
+                break;
             }
         }
 
@@ -77,6 +81,12 @@ function Game(id = support.getRandomId(5).toUpperCase(),
         return this.winner !== undefined;
     }
 
+    this.restart = () => {
+        this.currentTurn = this.winner === "XO" ? "X" : this.winner;
+        this.winner = undefined;
+        this.field = {};
+    }
+
     this.getState = (playerId) => {
         return {
             gameId: this.id,
@@ -84,8 +94,10 @@ function Game(id = support.getRandomId(5).toUpperCase(),
             currentTurn: this.currentTurn,
             player: this.getSymbol(playerId),
             opponentSymbol: "XO".replace(this.getSymbol(playerId), ""),
-            opponent: this.getOpponent(playerId)
-        }
+            opponent: this.getOpponent(playerId),
+            score: `${this.xWin}:${this.oWin}`,
+            winner: this.winner
+        };
     }
 }
 

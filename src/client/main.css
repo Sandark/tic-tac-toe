@@ -51,6 +51,7 @@ body {
     transition: color 1s ease-out;
     user-select: none;
     pointer-events: none;
+    font-weight: 900;
 }
 
 .game_winner.visible {
@@ -124,6 +125,11 @@ body {
     color: #000;
 }
 
+#score {
+    font-weight: 200;
+    font-size: 2em;
+}
+
 .game_menu {
     display: flex;
     flex-direction: column;
@@ -147,7 +153,7 @@ body {
 }
 
 #game-id-input.error {
-    border: 2px solid #f00;
+    border: 1px solid #f00;
 }
 
 @media (max-resolution: 120dpi) {

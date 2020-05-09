@@ -69,7 +69,7 @@ function onJoinedGamed(game, socket) {
     if (game.addPlayer(support.getPlayerId(socket)) === false) {
         socket.emit("disconnected");
         socket.disconnect(true);
-        console.log(`User was disconnected as game doesn't have more space ${support.getPlayerId(socket)}`);
+        console.info(`User was disconnected as game doesn't have more space ${support.getPlayerId(socket)}`);
         return;
     }
 
@@ -104,13 +104,12 @@ function onMoveMade(socket) {
         socket.to(currentGame.id).emit("moved.player", selectedCellId, currentGame.getSymbol(playerId), currentGame.currentTurn);
 
         if (currentGame.finished()) {
-            io.to(currentGame.id).emit("finished.game", currentGame.winner);
+            io.to(currentGame.id).emit("finished.game", currentGame.getState());
 
             setTimeout(() => {
-                let newGame = new gameFactory.Game(currentGame.id, currentGame.players, currentGame.winner === "XO" ? "X" : currentGame.winner);
-                games[newGame.id] = newGame;
+                currentGame.restart();
 
-                io.to(newGame.id).emit("restarted.game", newGame);
+                io.to(currentGame.id).emit("restarted.game", currentGame.getState());
             }, 10 * 1000)
         }
     };
