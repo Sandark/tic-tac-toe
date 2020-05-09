@@ -1,15 +1,11 @@
 const crypto = require("crypto");
 
 function getRandomId(length = 10) {
-    return crypto.randomBytes(length).toString("hex");
+    return crypto.randomBytes(20).toString("hex").substr(0, length);
 }
 
 function getPlayerId(socket) {
     return readCookie("userId", socket);
-}
-
-function getGameId(socket) {
-    return readCookie("gameId", socket);
 }
 
 function readCookie(name, socket) {
@@ -25,6 +21,5 @@ function readCookie(name, socket) {
 
 module.exports = {
     getRandomId,
-    getPlayerId,
-    getGameId
+    getPlayerId
 }

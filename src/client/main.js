@@ -4,27 +4,27 @@ const playerXStatus = document.getElementById("player-x-status");
 const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
+const chat = document.getElementById("chat");
 
 const joinGameButton = document.getElementById("join-socket");
 const startNewButton = document.getElementById("start-new");
 
-eraseCookie("gameId");
-
 let socket = io("/",
     {
-        autoConnect: false
+        autoConnect: false,
+        reconnect_attempt: 1
     });
 
 let playerSymbol;
+let opponentSymbol;
 
 joinGameButton.addEventListener("click", () => {
-    eraseCookie("gameId");
     if (gameIdInput.value !== "") {
         gameIdInput.classList.remove("error");
-        createCookie("gameId", gameIdInput.value);
 
         if (!socket.connected) {
             socket.open();
+            socket.emit("join.game", gameIdInput.value);
         }
     } else {
         gameIdInput.classList.add("error");
@@ -32,10 +32,9 @@ joinGameButton.addEventListener("click", () => {
 });
 
 startNewButton.addEventListener("click", () => {
-    eraseCookie("gameId");
-
     if (!socket.connected) {
         socket.open();
+        socket.emit("create.game");
     }
 });
 
@@ -47,7 +46,7 @@ cells.forEach(b => {
         }
         evt.preventDefault();
         evt.target.innerText = playerSymbol;
-        socket.emit("move", evt.currentTarget.id, playerSymbol);
+        socket.emit("move.made", evt.currentTarget.id, playerSymbol);
         disableAllCells();
         playerX.classList.toggle("current");
         playerO.classList.toggle("current");
@@ -70,6 +69,12 @@ function enableEmptyCells() {
     });
 }
 
+socket.on("wrong.game", () => {
+    socket.close();
+    chat.innerText = "Game ID doesn't exist. Try another one."
+    gameIdInput.classList.add("error");
+});
+
 socket.on("move.made", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
 
@@ -86,19 +91,12 @@ socket.on("move.made", (btn, value, currentTurn) => {
     }
 });
 
-socket.on("id generated", (userId) => {
-    if (readCookie("userId") !== userId) {
-        createCookie("userId", userId, 1);
-    }
-})
-
-socket.on("joined", (game) => {
-    eraseCookie("gameId");
-    createCookie("gameId", game.id);
+socket.on("joined.game", (game) => {
     gameIdInput.value = game.id;
 
     playerSymbol = game.players[readCookie("userId")];
-    document.getElementById("chat").innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${game.id}`;
+    opponentSymbol = "XO".replace(playerSymbol, "");
+    chat.innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${game.id}`;
 
     if (playerSymbol === "X") {
         playerXStatus.innerText = "You";
@@ -131,11 +129,11 @@ socket.on("joined", (game) => {
 
 function onWin(winner) {
     if (winner === "N") {
-        document.getElementById("chat").innerText = "This is draw! Game will be restarted in 10 sec.";
+        chat.innerText = "This is draw! Game will be restarted in 10 sec.";
     } else if (winner === playerSymbol) {
-        document.getElementById("chat").innerText = "Congratulation! You're the winner!";
+        chat.innerText = "Congratulation! You're the winner!";
     } else {
-        document.getElementById("chat").innerText = `Player ${winner} has won.`;
+        chat.innerText = `Player ${winner} has won.`;
     }
 
     if (winner === "X") {
@@ -149,7 +147,7 @@ function onWin(winner) {
     }
 }
 
-socket.on("player joined", (anotherPlayer) => {
+socket.on("joined.player", (anotherPlayer) => {
     updateStateInfo(anotherPlayer, "Online");
 })
 
@@ -166,12 +164,12 @@ function updateStateInfo(player, state) {
 }
 
 socket.on("disconnected", () => {
-    document.getElementById("chat").innerText = "This game already has 2 players";
+    chat.innerText = "This game already has 2 players";
 })
 
 socket.on("game reset", (game) => {
     cleanAllCells();
-    document.getElementById("chat").innerText = "Game was restarted!";
+    chat.innerText = "Game was restarted!";
 
     if (game.currentTurn === playerSymbol) {
         enableEmptyCells();
@@ -207,4 +205,10 @@ function readCookie(name) {
 
 function eraseCookie(name) {
     createCookie(name, "", -1);
+}
+
+if (readCookie("userId") === null) {
+    fetch("/get_player_id")
+        .then(res => res.json())
+        .then(res => createCookie("userId", res.playerId, 1));
 }
