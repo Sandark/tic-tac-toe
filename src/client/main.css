@@ -2,10 +2,7 @@
 body {
     font-family: Rubik, sans-serif;
     display: flex;
-}
-
-h1 {
-    text-align: center;
+    font-size: 32px;
 }
 
 .container {
@@ -61,6 +58,7 @@ h1 {
 
 .player {
     width: 40%;
+    height: 1.2em;
     display: flex;
     flex-direction: row;
     font-size: 40px;
@@ -95,25 +93,36 @@ h1 {
     box-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
 }
 
-#game-id {
-    border: 1px solid #b8b8b8;
-    background: #e8e8e8;
-    font-size: 2em;
-    font-weight: 200;
-    width: 30%;
-    text-align: center;
-    margin-top: 1em;
+.game_menu {
+    display: flex;
+    flex-direction: column;
 }
 
-#game-id-input {
+.input_box {
+    border: 1px solid #b8b8b8;
+    background: #e8e8e8;
+    font-weight: 200;
+    text-align: center;
+    min-height: 1em;
+    font-size: 2em;
+    margin-top: 0.5em;
+    font-family: inherit;
+}
 
+.input_box:disabled {
+    border: 1px solid #dbdbdb;
+    background: #eeeeee;
 }
 
 #game-id-input.error {
     border: 2px solid #f00;
 }
 
-@media (max-resolution: 120dpi) and (min-width: 600px) {
+@media (max-resolution: 120dpi) {
+    body {
+        font-size: 16px;
+    }
+
     .field {
         height: 450px;
         width: 450px;

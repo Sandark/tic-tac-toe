@@ -7,43 +7,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    
-    <div class="container">
-        <div class="game_menu">
-            <button type="button" id="start-new">START</button>
-            <button type="button" id="join-game">JOIN</button>
-            <input type="text" id="game-id-input" placeholder="Enter gameID to join">
-        </div>
-        <div class="header">
-            <h1 id="title">Welcome!</h1>
-        </div>
-        <div class="players">
-            <div class="player" id="player-x">
-                <div class="player-symbol">X</div>
-                <div class="status" id="player-x-status"></div>
-            </div>
-            <div class="player" id="player-o">
-                <div class="player-symbol">O</div>
-                <div class="status" id="player-o-status"></div>
-            </div>
-        </div>
-        <div class="field">
-            <button type="button" class="cell" id="c0" disabled></button>
-            <button type="button" class="cell" id="c1" disabled></button>
-            <button type="button" class="cell" id="c2" disabled></button>
-            <button type="button" class="cell" id="c3" disabled></button>
-            <button type="button" class="cell" id="c4" disabled></button>
-            <button type="button" class="cell" id="c5" disabled></button>
-            <button type="button" class="cell" id="c6" disabled></button>
-            <button type="button" class="cell" id="c7" disabled></button>
-            <button type="button" class="cell" id="c8" disabled></button>
-        </div>
-        <div class="chat" id="chat">
 
+<div class="container">
+    <div class="players">
+        <div class="player" id="player-x">
+            <div class="player-symbol">X</div>
+            <div class="status" id="player-x-status"></div>
         </div>
-        <button type="button" id="disconnect-game">DISCONNECT</button>
-        <div id="game-id">*</div>
+        <div class="player" id="player-o">
+            <div class="player-symbol">O</div>
+            <div class="status" id="player-o-status"></div>
+        </div>
     </div>
+    <div class="field">
+        <button type="button" class="cell" id="c0" disabled></button>
+        <button type="button" class="cell" id="c1" disabled></button>
+        <button type="button" class="cell" id="c2" disabled></button>
+        <button type="button" class="cell" id="c3" disabled></button>
+        <button type="button" class="cell" id="c4" disabled></button>
+        <button type="button" class="cell" id="c5" disabled></button>
+        <button type="button" class="cell" id="c6" disabled></button>
+        <button type="button" class="cell" id="c7" disabled></button>
+        <button type="button" class="cell" id="c8" disabled></button>
+    </div>
+    <div class="game_menu">
+        <button class="input_box" type="button" id="start-new">START</button>
+        <button class="input_box" type="button" id="join-game">JOIN</button>
+        <input class="input_box" type="text" id="game-id-input" placeholder="Enter gameID to join">
+        <button class="input_box" type="button" id="disconnect-game">DISCONNECT</button>
+    </div>
+    <div class="chat" id="chat"></div>
+</div>
 </body>
 <script src="/socket.io/socket.io.js"></script>
 <script src="./main.js"></script>

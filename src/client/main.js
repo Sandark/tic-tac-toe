@@ -5,7 +5,6 @@ const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
 const chat = document.getElementById("chat");
-const currentGameId = document.getElementById("game-id");
 
 const joinGameButton = document.getElementById("join-game");
 const startNewButton = document.getElementById("start-new");
@@ -30,6 +29,7 @@ joinGameButton.addEventListener("click", () => {
         if (!socket.connected) {
             socket.open();
             socket.emit("join.game", gameIdInput.value);
+            onConnectionOpened();
         }
     } else {
         gameIdInput.classList.add("error");
@@ -40,17 +40,31 @@ startNewButton.addEventListener("click", () => {
     if (!socket.connected) {
         socket.open();
         socket.emit("create.game");
+        onConnectionOpened();
     }
 });
 
 disconnectButton.addEventListener("click", () => {
     if (socket.connected) {
         socket.close();
+        onConnectionClosed();
     }
 
     disableAllCells();
-    currentGameId.innerText = "";
-})
+    gameIdInput.value = "";
+});
+
+function onConnectionOpened() {
+    startNewButton.disabled = true;
+    joinGameButton.disabled = true;
+    gameIdInput.disabled = true;
+}
+
+function onConnectionClosed() {
+    startNewButton.disabled = false;
+    joinGameButton.disabled = false;
+    gameIdInput.disabled = false;
+}
 
 cells.forEach(b => {
     b.addEventListener("click", (evt) => {
@@ -118,11 +132,10 @@ socket.on("moved.player", (btn, value, currentTurn) => {
 });
 
 socket.on("joined.game", (gameState) => {
-    currentGameId.innerText = gameState.gameId;
+    gameIdInput.value = "GameID: " + gameState.gameId;
 
     playerSymbol = gameState.player;
     opponentSymbol = gameState.opponentSymbol;
-    // chat.innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${gameState.gameId}`;
 
     updateStateInfo(playerSymbol, "You");
     updateStateInfo(opponentSymbol, gameState.opponent ? "Online" : "Offline");
