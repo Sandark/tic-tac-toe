@@ -29,8 +29,8 @@ function Game(id = support.getRandomId(5).toUpperCase(), players = {}, currentTu
         return Object.keys(this.players).length > 0;
     }
 
-    this.hasPlayer = (symbol) => {
-        return Object.values(players).includes(symbol);
+    this.getOpponent = (playerId) => {
+        return Object.keys(players).find(p => p !== playerId);
     }
 
     this.getSymbol = (id) => {
@@ -73,6 +73,17 @@ function Game(id = support.getRandomId(5).toUpperCase(), players = {}, currentTu
 
     this.finished = () => {
         return this.winner !== undefined;
+    }
+
+    this.getState = (playerId) => {
+        return {
+            gameId: this.id,
+            field: this.field,
+            currentTurn: this.currentTurn,
+            player: this.getSymbol(playerId),
+            opponentSymbol: "XO".replace(this.getSymbol(playerId), ""),
+            opponent: this.getOpponent(playerId)
+        }
     }
 }
 
