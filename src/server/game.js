@@ -2,7 +2,7 @@ const support = require("./support");
 const winCombinations = ["012", "345", "678", "036", "147", "258", "048", "246"];
 
 function Game(players = {}, currentTurn = "X") {
-    this.id = support.getRandomId();
+    this.id = support.getRandomId(4);
     this.players = players;
     this.field = {};
     this.winner = undefined;

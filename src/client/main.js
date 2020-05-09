@@ -6,6 +6,9 @@ const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
 
 const joinGameButton = document.getElementById("join-socket");
+const startNewButton = document.getElementById("start-new");
+
+eraseCookie("gameId");
 
 let socket = io("/",
     {
@@ -17,13 +20,24 @@ let playerSymbol;
 joinGameButton.addEventListener("click", () => {
     eraseCookie("gameId");
     if (gameIdInput.value !== "") {
+        gameIdInput.classList.remove("error");
         createCookie("gameId", gameIdInput.value);
+
+        if (!socket.connected) {
+            socket.open();
+        }
+    } else {
+        gameIdInput.classList.add("error");
     }
+});
+
+startNewButton.addEventListener("click", () => {
+    eraseCookie("gameId");
 
     if (!socket.connected) {
         socket.open();
     }
-})
+});
 
 cells.forEach(b => {
     b.addEventListener("click", (evt) => {
@@ -56,7 +70,7 @@ function enableEmptyCells() {
     });
 }
 
-socket.on("move", (btn, value, currentTurn) => {
+socket.on("move.made", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
 
     if (currentTurn === playerSymbol) {
@@ -83,7 +97,7 @@ socket.on("joined", (game) => {
     createCookie("gameId", game.id);
     gameIdInput.value = game.id;
 
-    playerSymbol = game.getSymbol(readCookie("userId"));
+    playerSymbol = game.players[readCookie("userId")];
     document.getElementById("chat").innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${game.id}`;
 
     if (playerSymbol === "X") {
@@ -108,34 +122,14 @@ socket.on("joined", (game) => {
         document.getElementById(key).innerText = game.field[key];
     })
 
-    if (game.currentTurn === playerSymbol) {
+    if (game.currentTurn === playerSymbol && !status.winner) {
         enableEmptyCells();
     }
 
     game.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
 });
 
-socket.on("player joined", (anotherPlayer) => {
-    if (anotherPlayer === "X") {
-        playerXStatus.innerText = "Online";
-    } else if (anotherPlayer === "O") {
-        playerOStatus.innerText = "Online";
-    }
-})
-
-socket.on("player left", (anotherPlayer) => {
-    if (anotherPlayer === "X") {
-        playerXStatus.innerText = "Offline";
-    } else if (anotherPlayer === "O") {
-        playerOStatus.innerText = "Offline";
-    }
-})
-
-socket.on("disconnected", () => {
-    document.getElementById("chat").innerText = "This game already has 2 players";
-})
-
-socket.on("game end", (winner) => {
+function onWin(winner) {
     if (winner === "N") {
         document.getElementById("chat").innerText = "This is draw! Game will be restarted in 10 sec.";
     } else if (winner === playerSymbol) {
@@ -153,8 +147,26 @@ socket.on("game end", (winner) => {
         playerO.classList.add("current");
         playerX.classList.remove("current");
     }
+}
 
-    disableAllCells();
+socket.on("player joined", (anotherPlayer) => {
+    updateStateInfo(anotherPlayer, "Online");
+})
+
+socket.on("player left", (anotherPlayer) => {
+    updateStateInfo(anotherPlayer, "Offline");
+})
+
+function updateStateInfo(player, state) {
+    if (player === "X") {
+        playerXStatus.innerText = state;
+    } else if (player === "O") {
+        playerOStatus.innerText = state;
+    }
+}
+
+socket.on("disconnected", () => {
+    document.getElementById("chat").innerText = "This game already has 2 players";
 })
 
 socket.on("game reset", (game) => {
@@ -165,14 +177,8 @@ socket.on("game reset", (game) => {
         enableEmptyCells();
     }
 
-    if (game.currentTurn === "X") {
-        playerX.classList.add("current");
-        playerO.classList.remove("current");
-    } else {
-        playerO.classList.add("current");
-        playerX.classList.remove("current");
-    }
-
+    playerX.classList.remove("current");
+    playerO.classList.remove("current");
     playerX.classList.remove("winner");
     playerO.classList.remove("winner");
 })

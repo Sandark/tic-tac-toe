@@ -90,6 +90,14 @@ h1 {
     box-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
 }
 
+#game-id-input {
+
+}
+
+#game-id-input.error {
+    border: 2px solid #f00;
+}
+
 @media(max-resolution: 120dpi) and (min-width: 600px) {
     .field {
         height: 450px;
