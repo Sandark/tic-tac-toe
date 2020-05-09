@@ -1,8 +1,8 @@
 const support = require("./support");
 const winCombinations = ["012", "345", "678", "036", "147", "258", "048", "246"];
 
-function Game(players = {}, currentTurn = "X") {
-    this.id = support.getRandomId(5).toUpperCase();
+function Game(id = support.getRandomId(5).toUpperCase(), players = {}, currentTurn = "X") {
+    this.id = id;
     this.players = players;
     this.field = {};
     this.winner = undefined;

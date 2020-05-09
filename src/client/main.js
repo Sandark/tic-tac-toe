@@ -6,10 +6,11 @@ const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
 const chat = document.getElementById("chat");
 
-const joinGameButton = document.getElementById("join-socket");
+const joinGameButton = document.getElementById("join-game");
 const startNewButton = document.getElementById("start-new");
+const disconnectButton = document.getElementById("disconnect-game");
 
-let socket = io("/",
+const socket = io("/",
     {
         autoConnect: false,
         reconnect_attempt: 1
@@ -18,6 +19,7 @@ let socket = io("/",
 let playerSymbol;
 let opponentSymbol;
 
+/* Setup listeners for buttons */
 joinGameButton.addEventListener("click", () => {
     if (gameIdInput.value !== "") {
         gameIdInput.classList.remove("error");
@@ -38,6 +40,12 @@ startNewButton.addEventListener("click", () => {
     }
 });
 
+disconnectButton.addEventListener("click", () => {
+    if (socket.connected) {
+        socket.close();
+    }
+})
+
 cells.forEach(b => {
     b.addEventListener("click", (evt) => {
         if (evt.target.disabled) {
@@ -53,6 +61,14 @@ cells.forEach(b => {
     });
 });
 
+/* Request player ID from server if missing */
+if (readCookie("userId") === null) {
+    fetch("/get_player_id")
+        .then(res => res.json())
+        .then(res => createCookie("userId", res.playerId, 1));
+}
+
+/* Game logic */
 function cleanAllCells() {
     cells.forEach(b => b.innerText = "");
 }
@@ -69,13 +85,17 @@ function enableEmptyCells() {
     });
 }
 
+socket.on("disconnected", () => {
+    chat.innerText = "This game already has 2 players";
+})
+
 socket.on("wrong.game", () => {
     socket.close();
     chat.innerText = "Game ID doesn't exist. Try another one."
     gameIdInput.classList.add("error");
 });
 
-socket.on("move.made", (btn, value, currentTurn) => {
+socket.on("moved.player", (btn, value, currentTurn) => {
     document.getElementById(btn).innerText = value;
 
     if (currentTurn === playerSymbol) {
@@ -151,7 +171,7 @@ socket.on("joined.player", (anotherPlayer) => {
     updateStateInfo(anotherPlayer, "Online");
 })
 
-socket.on("player left", (anotherPlayer) => {
+socket.on("disconnected.player", (anotherPlayer) => {
     updateStateInfo(anotherPlayer, "Offline");
 })
 
@@ -163,11 +183,7 @@ function updateStateInfo(player, state) {
     }
 }
 
-socket.on("disconnected", () => {
-    chat.innerText = "This game already has 2 players";
-})
-
-socket.on("game reset", (game) => {
+socket.on("restarted.game", (game) => {
     cleanAllCells();
     chat.innerText = "Game was restarted!";
 
@@ -181,6 +197,8 @@ socket.on("game reset", (game) => {
     playerO.classList.remove("winner");
 })
 
+
+/* Cookie specific functions */
 function createCookie(name, value, days) {
     let expires = "";
     if (days) {
@@ -205,10 +223,4 @@ function readCookie(name) {
 
 function eraseCookie(name) {
     createCookie(name, "", -1);
-}
-
-if (readCookie("userId") === null) {
-    fetch("/get_player_id")
-        .then(res => res.json())
-        .then(res => createCookie("userId", res.playerId, 1));
 }
