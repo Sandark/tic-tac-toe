@@ -25,15 +25,9 @@ let gamesDestroyTimeout = {};
 let playerRemovalTimeout = {};
 
 io.on("connection", (socket) => {
-    let gameId = support.getGameId(socket);
-    let game;
-    if (gameId === null || games[gameId] === undefined) {
-        let newGame = new gameFactory.Game();
-        gameId = newGame.id;
-        games[gameId] = newGame;
-    }
+    let game = getGame(socket);
 
-    game = games[gameId];
+    socket.join(game.id);
 
     if (game.addPlayer(support.getPlayerId(socket)) === false) {
         socket.emit("disconnected");
@@ -60,32 +54,13 @@ io.on("connection", (socket) => {
     }
     socket.emit("joined", game);
 
-    socket.broadcast.emit("player joined", game.getSymbol(support.getPlayerId(socket)));
+    socket.to(game.id).emit("player joined", game.getSymbol(support.getPlayerId(socket)));
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', onDisconnect(socket, game));
+
+    socket.on("move.made", (selectedCellId) => {
         const playerId = support.getPlayerId(socket);
-        const currentGame = games[support.getGameId(socket)] || Object.values(games).find(g => g.getSymbol(playerId) !== undefined);
-
-        console.info(`user disconnected ${playerId}`);
-        io.emit("player left", currentGame.getSymbol(playerId));
-
-        playerRemovalTimeout[playerId] = setTimeout(() => {
-            currentGame.deletePlayer(playerId);
-
-            if (!currentGame.hasPlayers()) {
-                console.info(`All players have left. Game ${currentGame.id} will be destroyed in 60 seconds`);
-                gamesDestroyTimeout[currentGame.id] = setTimeout(() => {
-                    console.info(`Game ${currentGame.id} was destroyed.`)
-                    delete games[game.id];
-                }, 60 * 1000);
-            }
-
-        }, 30 * 1000)
-    });
-
-    socket.on("move", (selectedCellId) => {
-        const playerId = support.getPlayerId(socket);
-        const currentGame = games[support.getGameId(socket)] || Object.values(games).find(g => g.getSymbol(playerId) !== undefined);
+        const currentGame = getGame(socket);
 
         console.log(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
 
@@ -106,3 +81,38 @@ io.on("connection", (socket) => {
         }
     })
 });
+
+function getGame(socket) {
+    let gameId = support.getGameId(socket);
+
+    if (gameId === null || games[gameId] === undefined) {
+        let newGame = new gameFactory.Game();
+        gameId = newGame.id;
+        games[gameId] = newGame;
+    }
+
+    return games[gameId];
+}
+
+function onDisconnect(socket) {
+    return () => {
+        const playerId = support.getPlayerId(socket);
+        const currentGame = getGame(socket);
+
+        console.info(`Player ${playerId} was disconnected from game ${currentGame.id}.`);
+        io.to(currentGame.id).emit("player left", currentGame.getSymbol(playerId));
+
+        playerRemovalTimeout[playerId] = setTimeout(() => {
+            currentGame.deletePlayer(playerId);
+
+            if (!currentGame.hasPlayers()) {
+                console.info(`All players have left. Game ${currentGame.id} will be destroyed in 60 seconds`);
+                gamesDestroyTimeout[currentGame.id] = setTimeout(() => {
+                    console.info(`Game ${currentGame.id} was destroyed.`)
+                    delete games[currentGame.id];
+                }, 60 * 1000);
+            }
+
+        }, 30 * 1000)
+    };
+}
