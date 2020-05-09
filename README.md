@@ -5,7 +5,7 @@
 Classic game to play with friends online.
 
 
-* Written in Node.js+Express+Socket.io on server site and vanilla JS+HTML+CSS on client side
+* Written in Node.js+Express+Socket.io on server side and vanilla JS+HTML+CSS on client side
 * Supports game rooms, several games can be played simultaniously. GameID is generated on Start game button
 * Player can disconnect and join or create another game
 * Games are stored in memory and removed automatically when all players left
