@@ -9,6 +9,11 @@
 <body>
     
     <div class="container">
+        <div class="game_menu">
+            <button type="button" id="start-new">START</button>
+            <button type="button" id="join-game">JOIN</button>
+            <input type="text" id="game-id-input" placeholder="Enter gameID to join">
+        </div>
         <div class="header">
             <h1 id="title">Welcome!</h1>
         </div>
@@ -36,10 +41,8 @@
         <div class="chat" id="chat">
 
         </div>
-        <button type="button" id="start-new">START</button>
-        <button type="button" id="join-game">JOIN</button>
-        <input type="text" id="game-id-input" placeholder="Enter gameID to join">
         <button type="button" id="disconnect-game">DISCONNECT</button>
+        <div id="game-id">*</div>
     </div>
 </body>
 <script src="/socket.io/socket.io.js"></script>

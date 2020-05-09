@@ -84,7 +84,7 @@ function onJoinedGamed(game, socket) {
         delete playerRemovalTimeout[support.getPlayerId(socket)];
     }
 
-    socket.emit("joined.game", game);
+    socket.emit("joined.game", game.getState(support.getPlayerId(socket)));
     socket.to(game.id).emit("joined.player", game.getSymbol(support.getPlayerId(socket)));
 }
 
@@ -101,18 +101,17 @@ function onMoveMade(socket) {
 
         currentGame.makeTurn(playerId, selectedCellId);
 
+        socket.to(currentGame.id).emit("moved.player", selectedCellId, currentGame.getSymbol(playerId), currentGame.currentTurn);
+
         if (currentGame.finished()) {
-            socket.to(currentGame.id).emit("moved.player", selectedCellId, currentGame.getSymbol(playerId), currentGame.winner);
-            io.to(currentGame.id).emit("game end", currentGame.winner);
+            io.to(currentGame.id).emit("finished.game", currentGame.winner);
 
             setTimeout(() => {
                 let newGame = new gameFactory.Game(currentGame.id, currentGame.players, currentGame.winner === "N" ? "X" : currentGame.winner);
                 games[newGame.id] = newGame;
 
-                io.emit("restarted.game", newGame);
+                io.to(newGame.id).emit("restarted.game", newGame);
             }, 10000)
-        } else {
-            socket.to(currentGame.id).emit("moved.player", selectedCellId, currentGame.getSymbol(playerId), currentGame.currentTurn);
         }
     };
 }

@@ -5,6 +5,7 @@ const playerO = document.getElementById("player-o");
 const playerOStatus = document.getElementById("player-o-status");
 const gameIdInput = document.getElementById("game-id-input");
 const chat = document.getElementById("chat");
+const currentGameId = document.getElementById("game-id");
 
 const joinGameButton = document.getElementById("join-game");
 const startNewButton = document.getElementById("start-new");
@@ -18,6 +19,8 @@ const socket = io("/",
 
 let playerSymbol;
 let opponentSymbol;
+
+disableAllCells();
 
 /* Setup listeners for buttons */
 joinGameButton.addEventListener("click", () => {
@@ -44,6 +47,9 @@ disconnectButton.addEventListener("click", () => {
     if (socket.connected) {
         socket.close();
     }
+
+    disableAllCells();
+    currentGameId.innerText = "";
 })
 
 cells.forEach(b => {
@@ -111,49 +117,48 @@ socket.on("moved.player", (btn, value, currentTurn) => {
     }
 });
 
-socket.on("joined.game", (game) => {
-    gameIdInput.value = game.id;
+socket.on("joined.game", (gameState) => {
+    currentGameId.innerText = gameState.gameId;
 
-    playerSymbol = game.players[readCookie("userId")];
-    opponentSymbol = "XO".replace(playerSymbol, "");
-    chat.innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${game.id}`;
+    playerSymbol = gameState.player;
+    opponentSymbol = gameState.opponentSymbol;
+    // chat.innerText = `You've joined the game, your symbol is ${playerSymbol} and game id is ${gameState.gameId}`;
 
-    if (playerSymbol === "X") {
-        playerXStatus.innerText = "You";
+    updateStateInfo(playerSymbol, "You");
+    updateStateInfo(opponentSymbol, gameState.opponent ? "Online" : "Offline");
 
-        if (Object.values(game.players).includes("O")) {
-            playerOStatus.innerText = "Online";
-        } else {
-            playerOStatus.innerText = "Offline";
-        }
-    } else {
-        playerOStatus.innerText = "You";
-
-        if (Object.values(game.players).includes("X")) {
-            playerXStatus.innerText = "Online";
-        } else {
-            playerXStatus.innerText = "Offline";
-        }
-    }
-
-    Object.keys(game.field).forEach(key => {
-        document.getElementById(key).innerText = game.field[key];
+    Object.keys(gameState.field).forEach(key => {
+        document.getElementById(key).innerText = gameState.field[key];
     })
 
-    if (game.currentTurn === playerSymbol && !status.winner) {
+    if (gameState.currentTurn === playerSymbol && !status.winner) {
         enableEmptyCells();
     }
 
-    game.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
+    gameState.currentTurn === "X" ? playerX.classList.add("current") : playerO.classList.add("current");
 });
 
-function onWin(winner) {
+socket.on("restarted.game", (game) => {
+    cleanAllCells();
+    chat.innerText = "Game was restarted!";
+
+    if (game.currentTurn === playerSymbol) {
+        enableEmptyCells();
+    }
+
+    playerX.classList.remove("winner");
+    playerO.classList.remove("winner");
+})
+
+socket.on("finished.game", (winner) => {
+    disableAllCells();
+
     if (winner === "N") {
         chat.innerText = "This is draw! Game will be restarted in 10 sec.";
     } else if (winner === playerSymbol) {
-        chat.innerText = "Congratulation! You're the winner!";
+        chat.innerText = "Congratulation! You're the winner!\nThe Game will be restarted in 10 sec.";
     } else {
-        chat.innerText = `Player ${winner} has won.`;
+        chat.innerText = `Player ${winner} has won.\nThe Game will be restarted in 10 sec.`;
     }
 
     if (winner === "X") {
@@ -165,7 +170,7 @@ function onWin(winner) {
         playerO.classList.add("current");
         playerX.classList.remove("current");
     }
-}
+});
 
 socket.on("joined.player", (anotherPlayer) => {
     updateStateInfo(anotherPlayer, "Online");
@@ -182,21 +187,6 @@ function updateStateInfo(player, state) {
         playerOStatus.innerText = state;
     }
 }
-
-socket.on("restarted.game", (game) => {
-    cleanAllCells();
-    chat.innerText = "Game was restarted!";
-
-    if (game.currentTurn === playerSymbol) {
-        enableEmptyCells();
-    }
-
-    playerX.classList.remove("current");
-    playerO.classList.remove("current");
-    playerX.classList.remove("winner");
-    playerO.classList.remove("winner");
-})
-
 
 /* Cookie specific functions */
 function createCookie(name, value, days) {
