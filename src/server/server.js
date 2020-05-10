@@ -64,14 +64,23 @@ function onCreateGame(socket) {
 }
 
 function onJoinedGamed(game, socket) {
-    socket.join(game.id);
+    let playerId = support.getPlayerId(socket);
 
-    if (game.addPlayer(support.getPlayerId(socket)) === false) {
+    socket.join(game.id);
+    if (game.addPlayer(playerId) === false) {
         socket.emit("disconnected");
         socket.disconnect(true);
-        console.info(`User was disconnected as game doesn't have more space ${support.getPlayerId(socket)}`);
+        console.info(`User was disconnected as game doesn't have more space ${playerId}`);
         return;
     }
+
+    Object.values(games)
+        .filter(g => g.id !== game.id && g.hasPlayer(playerId))
+        .forEach(g => {
+            g.deletePlayer(playerId);
+            console.info(`Player ${playerId} was removed from game ${g.id}`);
+            scheduleGameDestructionIfNoPlayers(g);
+        });
 
     if (game.hasPlayers() && gamesDestroyTimeout[game.id] !== undefined) {
         console.info(`Game ${game.id} destruction canceled.`);
@@ -79,13 +88,13 @@ function onJoinedGamed(game, socket) {
         delete gamesDestroyTimeout[game.id];
     }
 
-    if (playerRemovalTimeout[support.getPlayerId(socket)] !== undefined) {
-        clearTimeout(playerRemovalTimeout[support.getPlayerId(socket)]);
-        delete playerRemovalTimeout[support.getPlayerId(socket)];
+    if (playerRemovalTimeout[playerId] !== undefined) {
+        clearTimeout(playerRemovalTimeout[playerId]);
+        delete playerRemovalTimeout[playerId];
     }
 
-    socket.emit("joined.game", game.getState(support.getPlayerId(socket)));
-    socket.to(game.id).emit("joined.player", game.getSymbol(support.getPlayerId(socket)));
+    socket.emit("joined.game", game.getState(playerId));
+    socket.to(game.id).emit("joined.player", game.getSymbol(playerId));
 }
 
 function onMoveMade(socket) {
@@ -97,7 +106,7 @@ function onMoveMade(socket) {
             return;
         }
 
-        console.log(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
+        console.debug(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
 
         currentGame.makeTurn(playerId, selectedCellId);
 
@@ -115,6 +124,16 @@ function onMoveMade(socket) {
     };
 }
 
+function scheduleGameDestructionIfNoPlayers(game) {
+    if (!game.hasPlayers() && gamesDestroyTimeout[game.id] !== undefined) {
+        console.info(`All players have left. Game ${game.id} will be destroyed in 60 seconds`);
+        gamesDestroyTimeout[game.id] = setTimeout(() => {
+            console.info(`Game ${game.id} was destroyed.`)
+            delete games[game.id];
+        }, 60 * 1000);
+    }
+}
+
 function onDisconnect(socket) {
     return () => {
         const playerId = support.getPlayerId(socket);
@@ -129,15 +148,7 @@ function onDisconnect(socket) {
 
         playerRemovalTimeout[playerId] = setTimeout(() => {
             currentGame.deletePlayer(playerId);
-
-            if (!currentGame.hasPlayers()) {
-                console.info(`All players have left. Game ${currentGame.id} will be destroyed in 60 seconds`);
-                gamesDestroyTimeout[currentGame.id] = setTimeout(() => {
-                    console.info(`Game ${currentGame.id} was destroyed.`)
-                    delete games[currentGame.id];
-                }, 60 * 1000);
-            }
-
+            scheduleGameDestructionIfNoPlayers(currentGame);
         }, 30 * 1000)
     };
 }

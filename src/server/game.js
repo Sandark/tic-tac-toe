@@ -23,12 +23,16 @@ function Game(id = support.getRandomId(5).toUpperCase()) {
         }
     }
 
-    this.deletePlayer = (id) => {
-        delete this.players[id];
+    this.deletePlayer = (playerId) => {
+        delete this.players[playerId];
     }
 
     this.hasPlayers = () => {
         return Object.keys(this.players).length > 0;
+    }
+
+    this.hasPlayer = (playerId) => {
+        return Object.keys(this.players).includes(playerId);
     }
 
     this.getOpponent = (playerId) => {
