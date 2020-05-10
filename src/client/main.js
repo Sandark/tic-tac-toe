@@ -116,6 +116,7 @@ socket.on("disconnected", () => {
 socket.on("wrong.game", () => {
     socket.close();
     gameIdInput.classList.add("error");
+    onConnectionClosed();
 });
 
 socket.on("moved.player", (btn, value, currentTurn) => {

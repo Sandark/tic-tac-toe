@@ -125,7 +125,7 @@ function onMoveMade(socket) {
 }
 
 function scheduleGameDestructionIfNoPlayers(game) {
-    if (!game.hasPlayers() && gamesDestroyTimeout[game.id] !== undefined) {
+    if (!game.hasPlayers() && gamesDestroyTimeout[game.id] === undefined) {
         console.info(`All players have left. Game ${game.id} will be destroyed in 60 seconds`);
         gamesDestroyTimeout[game.id] = setTimeout(() => {
             console.info(`Game ${game.id} was destroyed.`)
