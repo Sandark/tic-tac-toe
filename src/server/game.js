@@ -1,16 +1,18 @@
 const support = require("./support");
 const winCombinations = ["012", "345", "678", "036", "147", "258", "048", "246"];
 
-function Game(id = support.getRandomId(5).toUpperCase()) {
-    this.id = id;
-    this.players = {};
-    this.field = {};
-    this.winner = undefined;
-    this.currentTurn = "X";
-    this.xWin = 0;
-    this.oWin = 0;
+class Game {
+    constructor(id = support.getRandomId(5).toUpperCase()) {
+        this.id = id;
+        this.players = {};
+        this.field = {};
+        this.winner = undefined;
+        this.currentTurn = "X";
+        this.xWin = 0;
+        this.oWin = 0;
+    }
 
-    this.addPlayer = (id) => {
+    addPlayer = (id) => {
         if (Object.keys(this.players).includes(id)) {
             return true;
         }
@@ -23,27 +25,27 @@ function Game(id = support.getRandomId(5).toUpperCase()) {
         }
     }
 
-    this.deletePlayer = (playerId) => {
+    deletePlayer = (playerId) => {
         delete this.players[playerId];
     }
 
-    this.hasPlayers = () => {
+    hasPlayers = () => {
         return Object.keys(this.players).length > 0;
     }
 
-    this.hasPlayer = (playerId) => {
+    hasPlayer = (playerId) => {
         return Object.keys(this.players).includes(playerId);
     }
 
-    this.getOpponent = (playerId) => {
+    getOpponent = (playerId) => {
         return Object.keys(this.players).find(p => p !== playerId);
     }
 
-    this.getSymbol = (playerId) => {
+    getSymbol = (playerId) => {
         return this.players[playerId];
     }
 
-    this.makeTurn = (id, selectedCell) => {
+    makeTurn = (id, selectedCell) => {
         let symbol = this.players[id];
         this.currentTurn = this.currentTurn === "X" ? "O" : "X";
         this.field[selectedCell] = symbol;
@@ -56,7 +58,7 @@ function Game(id = support.getRandomId(5).toUpperCase()) {
         }
     }
 
-    this.findWinner = () => {
+    findWinner = () => {
         for (let combination of winCombinations) {
             let rowValues = "";
             for (let n of combination.split("")) {
@@ -81,17 +83,17 @@ function Game(id = support.getRandomId(5).toUpperCase()) {
         }
     }
 
-    this.finished = () => {
+    finished = () => {
         return this.winner !== undefined;
     }
 
-    this.restart = () => {
+    restart = () => {
         this.currentTurn = this.winner === "XO" ? "X" : this.winner;
         this.winner = undefined;
         this.field = {};
     }
 
-    this.getState = (playerId) => {
+    getState = (playerId) => {
         return {
             gameId: this.id,
             field: this.field,
@@ -105,6 +107,6 @@ function Game(id = support.getRandomId(5).toUpperCase()) {
     }
 }
 
-module.exports = {
-    Game
-}
+
+
+module.exports = Game;

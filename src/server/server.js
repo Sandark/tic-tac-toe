@@ -3,7 +3,7 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const bodyParser = require("body-parser");
-const gameFactory = require("./game");
+const Game = require("./game");
 const support = require("./support");
 
 const port = process.env.PORT || 8080;
@@ -56,7 +56,7 @@ function onJoinGame(socket) {
 
 function onCreateGame(socket) {
     return () => {
-        let newGame = new gameFactory.Game();
+        let newGame = new Game();
         onJoinedGamed(newGame, socket);
         games[newGame.id] = newGame;
         console.log(`New game ${newGame.id} is created`);
@@ -102,10 +102,6 @@ function onMoveMade(socket) {
         const playerId = support.getPlayerId(socket);
         const currentGame = getGame(playerId);
 
-        if (currentGame === undefined) {
-            return;
-        }
-
         console.debug(`Button with id ${selectedCellId} was pressed by user ${playerId}`);
 
         currentGame.makeTurn(playerId, selectedCellId);
@@ -139,17 +135,15 @@ function onDisconnect(socket) {
         const playerId = support.getPlayerId(socket);
         const currentGame = getGame(playerId);
 
-        if (currentGame === undefined) {
-            return;
+        if (currentGame) {
+            console.info(`Player ${playerId} was disconnected from game ${currentGame.id}.`);
+            io.to(currentGame.id).emit("disconnected.player", currentGame.getSymbol(playerId));
+
+            playerRemovalTimeout[playerId] = setTimeout(() => {
+                currentGame.deletePlayer(playerId);
+                scheduleGameDestructionIfNoPlayers(currentGame);
+            }, 30 * 1000)
         }
-
-        console.info(`Player ${playerId} was disconnected from game ${currentGame.id}.`);
-        io.to(currentGame.id).emit("disconnected.player", currentGame.getSymbol(playerId));
-
-        playerRemovalTimeout[playerId] = setTimeout(() => {
-            currentGame.deletePlayer(playerId);
-            scheduleGameDestructionIfNoPlayers(currentGame);
-        }, 30 * 1000)
     };
 }
 
