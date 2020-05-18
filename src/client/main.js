@@ -109,10 +109,6 @@ function enableEmptyCells() {
     });
 }
 
-socket.on("disconnected", () => {
-
-})
-
 socket.on("wrong.game", () => {
     socket.close();
     gameIdInput.classList.add("error");

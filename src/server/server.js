@@ -37,9 +37,9 @@ io.on("connection", (socket) => {
 
     socket.on("create.game", onCreateGame(socket))
 
-    socket.on('disconnect', onDisconnect(socket));
-
     socket.on("move.made", onMoveMade(socket))
+
+    socket.on("disconnect", onDisconnect(socket));
 });
 
 function onJoinGame(socket) {
