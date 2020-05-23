@@ -30,6 +30,7 @@ let games = {};
 let gamesDestroyTimeout = {};
 let playerRemovalTimeout = {};
 
+/* Client interaction with server */
 io.on("connection", (socket) => {
     console.log(`A user connected ${support.getPlayerId(socket)}`);
 

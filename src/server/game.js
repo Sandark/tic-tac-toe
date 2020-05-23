@@ -50,12 +50,6 @@ class Game {
         this.currentTurn = this.currentTurn === "X" ? "O" : "X";
         this.field[selectedCell] = symbol;
         this.findWinner();
-
-        if (this.winner !== undefined) {
-            this.state = "won";
-        } else if (Object.keys(this.field).length === 9) {
-            this.state = "draw";
-        }
     }
 
     findWinner = () => {
